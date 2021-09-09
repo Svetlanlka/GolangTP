@@ -13,7 +13,7 @@ func Uniq(values []string, op Options) []string {
 	writer := functors.NewWriterMock()
 
 	for _, value := range values {
-		if StrIsEqual(value, currentStr, op) {
+		if !StrIsEqual(value, currentStr, op) {
 			if currentNumber > 0 {
 				WriteStr(currentNumber, currentStr, writer, op, false)
 			}
@@ -21,7 +21,7 @@ func Uniq(values []string, op Options) []string {
 			currentNumber = 0
 			currentStr = value
 		}
-		
+
 		currentNumber++
 	}
 	//fmt.Println("number: " + strconv.Itoa(currentNumber) + " curStr: " + currentSt)

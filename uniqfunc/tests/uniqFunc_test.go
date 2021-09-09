@@ -1,10 +1,8 @@
 package uniqfunc_test
 
 import (
-	//	. "GolangTP/options"
-
 	"GolangTP/options"
-	. "GolangTP/uniqfunc"
+	"GolangTP/uniqfunc"
 	"GolangTP/uniqfunc/tests/testcases"
 	"strings"
 	"testing"
@@ -61,11 +59,25 @@ func TestUniq(t *testing.T) {
 			options: options.Options{NumCharsIgnore: 1},
 			out:     testcases.TestOut7,
 		},
+		{
+			name: "Multi test",
+			in:   testcases.TestIn8,
+			options: options.Options{WithNumber: true, IgnoreSymCase: true,
+				NumCharsIgnore: 3, NumFieldsIgnore: 2},
+			out: testcases.TestOut8,
+		},
+		{
+			name:    "Whitespace str",
+			in:      testcases.TestIn9,
+			options: options.Options{WithNumber: true, NumFieldsIgnore: 1},
+			out:     testcases.TestOut9,
+		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			require.Equal(t, strings.SplitAfter(test.out, "\n"), Uniq(strings.Split(test.in, "\n"), test.options))
+			require.Equal(t, strings.SplitAfter(test.out, "\n"),
+				uniqfunc.Uniq(strings.Split(test.in, "\n"), test.options))
 		})
 	}
 }
