@@ -8,7 +8,7 @@ import (
 )
 
 func ExecutePipeline(workers ...job) {
-	var in chan interface{}
+	in := make(chan interface{})
 	wg := new(sync.WaitGroup)
 
 	for _, work := range workers {
@@ -30,13 +30,15 @@ func ExecutePipeline(workers ...job) {
 func SingleHash(in, out chan interface{}) {
 	wgComplex := new(sync.WaitGroup)
 	mu := new(sync.Mutex)
+
 	for dataRaw := range in {
 		wgComplex.Add(1)
+
 		go func(dataRaw interface{}, wgComplex *sync.WaitGroup) {
 			defer wgComplex.Done()
 			data := fmt.Sprint(dataRaw)
-			data1 := make(chan string, 1)
-			data2 := make(chan string, 1)
+			data1 := make(chan string)
+			data2 := make(chan string)
 
 			mu.Lock()
 			dataMd5 := DataSignerMd5(data)
@@ -58,25 +60,28 @@ func SingleHash(in, out chan interface{}) {
 
 func MultiHash(in, out chan interface{}) {
 	wgComplex := new(sync.WaitGroup)
+
 	for dataRaw := range in {
 		wgComplex.Add(1)
+
 		go func(dataRaw interface{}, wgComplex *sync.WaitGroup) {
 			defer wgComplex.Done()
-			var hash sync.Map
-			var result string = ""
+			hash := new(sync.Map)
+			result := ""
 			data, ok := dataRaw.(string)
 			if !ok {
 				fmt.Println("cant convert input data to string")
 				return
 			}
-			wg := new(sync.WaitGroup)
 
+			wg := new(sync.WaitGroup)
 			for th := 0; th < 6; th++ {
 				wg.Add(1)
+
 				go func(th int, data string, hash *sync.Map, wg *sync.WaitGroup) {
 					defer wg.Done()
 					hash.Store(th, DataSignerCrc32(strconv.Itoa(th)+data))
-				}(th, data, &hash, wg)
+				}(th, data, hash, wg)
 			}
 			wg.Wait()
 
@@ -97,8 +102,8 @@ func MultiHash(in, out chan interface{}) {
 }
 
 func CombineResults(in, out chan interface{}) {
-	var result string = ""
-	var hash []string
+	result := ""
+	hash := make([]string, 0)
 
 	for dataRaw := range in {
 		data, ok := dataRaw.(string)
