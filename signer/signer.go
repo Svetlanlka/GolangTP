@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strconv"
 	"sync"
-	"time"
 )
 
 func ExecutePipeline(workers ...job) {
@@ -29,114 +28,90 @@ func ExecutePipeline(workers ...job) {
 }
 
 func SingleHash(in, out chan interface{}) {
-	// start := time.Now()
-	// end1 := time.Since(start)
-	// fmt.Println("singlehash begin time ", end1)
-	i := 0
 	wgComplex := new(sync.WaitGroup)
+	mu := new(sync.Mutex)
 	for dataRaw := range in {
 		wgComplex.Add(1)
-		go func(dataRaw interface{}, wgComplex *sync.WaitGroup, i int) {
-			// start2 := time.Now()
-
+		go func(dataRaw interface{}, wgComplex *sync.WaitGroup) {
 			defer wgComplex.Done()
 			data := fmt.Sprint(dataRaw)
-			// fmt.Println(data)
-			var data1, data2 string
-			wg := new(sync.WaitGroup)
+			data1 := make(chan string, 1)
+			data2 := make(chan string, 1)
+
+			mu.Lock()
 			dataMd5 := DataSignerMd5(data)
-			// fmt.Println("md5(data) ", dataMd5)
+			mu.Unlock()
 
-			wg.Add(2)
-			go func(data string, wg *sync.WaitGroup) {
-				defer wg.Done()
-				data1 = DataSignerCrc32(data)
-				// fmt.Println("crc32(data) ", data1)
-				// end3 := time.Since(start)
-				// fmt.Println("singlehash time go", i, "|1:", end3)
-			}(data, wg)
-			go func(dataMd5 string, wg *sync.WaitGroup) {
-				defer wg.Done()
-				data2 = DataSignerCrc32(dataMd5)
-				// fmt.Println("md5(crc32(data)) ", data2)
-				// end4 := time.Since(start)
-				// fmt.Println("singlehash time go", i, "|2:", end4)
-			}(dataMd5, wg)
-			wg.Wait()
+			go func(data string) {
+				data1 <- DataSignerCrc32(data)
+			}(data)
+			go func(dataMd5 string) {
+				data2 <- DataSignerCrc32(dataMd5)
+			}(dataMd5)
 
-			hash := (data1 + "~" + data2)
+			hash := <-data1 + "~" + <-data2
 			out <- hash
-			// fmt.Println("SingleHash ", hash)
-			// end2 := time.Since(start2)
-			// fmt.Println("singlehash time ", i, ":", end2)
-		}(dataRaw, wgComplex, i)
-		i++
-		time.Sleep(time.Millisecond * 10)
+		}(dataRaw, wgComplex)
 	}
 	wgComplex.Wait()
-	// end := time.Since(start)
-	// fmt.Println("Singlehash ", end)
 }
 
 func MultiHash(in, out chan interface{}) {
-	// start := time.Now()
-	// end1 := time.Since(start)
-	// fmt.Println("multihash begin time ", end1)
+	wgComplex := new(sync.WaitGroup)
 	for dataRaw := range in {
-		var hash sync.Map
-		var result string = ""
-		data, ok := dataRaw.(string)
-		if !ok {
-			panic("cant convert input data to string")
-		}
-		wg := new(sync.WaitGroup)
-
-		for th := 0; th < 6; th++ {
-			wg.Add(1)
-			go func(th int, data string, hash *sync.Map, wg *sync.WaitGroup) {
-				defer wg.Done()
-				hash.Store(th, DataSignerCrc32(strconv.Itoa(th)+data))
-			}(th, data, &hash, wg)
-		}
-		wg.Wait()
-
-		for th := 0; th < 6; th++ {
-			h, ok := hash.Load(th)
+		wgComplex.Add(1)
+		go func(dataRaw interface{}, wgComplex *sync.WaitGroup) {
+			defer wgComplex.Done()
+			var hash sync.Map
+			var result string = ""
+			data, ok := dataRaw.(string)
 			if !ok {
-				panic("load of value in MultiHash failed")
+				fmt.Println("cant convert input data to string")
+				return
 			}
-			strHash := fmt.Sprint(h)
-			// fmt.Println("res ", th, " ", strHash)
-			result += strHash
-		}
+			wg := new(sync.WaitGroup)
 
-		out <- result
-		// fmt.Println("MultiHash ", result)
+			for th := 0; th < 6; th++ {
+				wg.Add(1)
+				go func(th int, data string, hash *sync.Map, wg *sync.WaitGroup) {
+					defer wg.Done()
+					hash.Store(th, DataSignerCrc32(strconv.Itoa(th)+data))
+				}(th, data, &hash, wg)
+			}
+			wg.Wait()
+
+			for th := 0; th < 6; th++ {
+				h, ok := hash.Load(th)
+				if !ok {
+					fmt.Println("cant convert input data to string")
+					return
+				}
+				strHash := fmt.Sprint(h)
+				result += strHash
+			}
+
+			out <- result
+		}(dataRaw, wgComplex)
 	}
-	// end := time.Since(start)
-	// fmt.Println("MultiHash ", end)
+	wgComplex.Wait()
 }
 
 func CombineResults(in, out chan interface{}) {
-	// start := time.Now()
 	var result string = ""
 	var hash []string
-	wg := new(sync.WaitGroup)
 
 	for dataRaw := range in {
-		wg.Add(1)
-		go func(dataRaw interface{}, hash *[]string, wg *sync.WaitGroup) {
-			defer wg.Done()
-			data, ok := dataRaw.(string)
-			if !ok {
-				panic("cant convert input data to string")
-			}
-			*hash = append(*hash, data)
-		}(dataRaw, &hash, wg)
+		data, ok := dataRaw.(string)
+		if !ok {
+			fmt.Println("cant convert input data to string")
+			return
+		}
+
+		hash = append(hash, data)
 	}
-	wg.Wait()
 
 	sort.Strings(hash)
+
 	for i := range hash {
 		result += hash[i]
 		if i < len(hash)-1 {
@@ -144,7 +119,4 @@ func CombineResults(in, out chan interface{}) {
 		}
 	}
 	out <- result
-	// fmt.Println("CombineResults ", result)
-	// end := time.Since(start)
-	// fmt.Println("CombineResults ", end)
 }
