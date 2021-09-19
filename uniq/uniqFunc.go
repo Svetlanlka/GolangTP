@@ -1,8 +1,8 @@
 package uniq
 
 import (
-	. "GolangTP/options"
-	"GolangTP/uniqfunc/functors"
+	"uniq/functors"
+	. "uniq/options"
 )
 
 func Uniq(values []string, op Options) []string {

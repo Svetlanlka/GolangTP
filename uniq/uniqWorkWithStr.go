@@ -1,10 +1,10 @@
 package uniq
 
 import (
-	. "GolangTP/options"
-	"GolangTP/uniqfunc/functors"
 	"strconv"
 	"strings"
+	"uniq/functors"
+	. "uniq/options"
 )
 
 func IsTrue(value bool) int8 {

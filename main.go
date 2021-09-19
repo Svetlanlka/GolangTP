@@ -1,12 +1,11 @@
-package uniq
+package main
 
 import (
-	. "options"
+	. "github.com/svetlanlka/golangtp/uniq"
 	// . "GolangTP/uniqfunc"
 	"bufio"
 	"flag"
 	"fmt"
-	"functors"
 	"os"
 )
 
