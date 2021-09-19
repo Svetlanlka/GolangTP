@@ -1,4 +1,4 @@
-package uniqfunc
+package uniq
 
 import (
 	"fmt"
