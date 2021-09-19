@@ -29,15 +29,15 @@ func ExecutePipeline(workers ...job) {
 }
 
 func SingleHash(in, out chan interface{}) {
-	start := time.Now()
-	end1 := time.Since(start)
-	fmt.Println("singlehash begin time ", end1)
+	// start := time.Now()
+	// end1 := time.Since(start)
+	// fmt.Println("singlehash begin time ", end1)
 	i := 0
 	wgComplex := new(sync.WaitGroup)
 	for dataRaw := range in {
 		wgComplex.Add(1)
-		go func(dataRaw interface{}, wgComplex *sync.WaitGroup) {
-			start2 := time.Now()
+		go func(dataRaw interface{}, wgComplex *sync.WaitGroup, i int) {
+			// start2 := time.Now()
 
 			defer wgComplex.Done()
 			data := fmt.Sprint(dataRaw)
@@ -52,36 +52,36 @@ func SingleHash(in, out chan interface{}) {
 				defer wg.Done()
 				data1 = DataSignerCrc32(data)
 				// fmt.Println("crc32(data) ", data1)
-				end3 := time.Since(start2)
-				fmt.Println("singlehash time 1 go", i, ":", end3)
+				// end3 := time.Since(start)
+				// fmt.Println("singlehash time go", i, "|1:", end3)
 			}(data, wg)
 			go func(dataMd5 string, wg *sync.WaitGroup) {
 				defer wg.Done()
 				data2 = DataSignerCrc32(dataMd5)
 				// fmt.Println("md5(crc32(data)) ", data2)
-				end3 := time.Since(start2)
-				fmt.Println("singlehash time 1 go", i, ":", end3)
+				// end4 := time.Since(start)
+				// fmt.Println("singlehash time go", i, "|2:", end4)
 			}(dataMd5, wg)
 			wg.Wait()
 
 			hash := (data1 + "~" + data2)
 			out <- hash
 			// fmt.Println("SingleHash ", hash)
-			end2 := time.Since(start2)
-			fmt.Println("singlehash time ", i, ":", end2)
-			i++
-		}(dataRaw, wgComplex)
+			// end2 := time.Since(start2)
+			// fmt.Println("singlehash time ", i, ":", end2)
+		}(dataRaw, wgComplex, i)
+		i++
 		time.Sleep(time.Millisecond * 10)
 	}
 	wgComplex.Wait()
-	end := time.Since(start)
-	fmt.Println("Singlehash ", end)
+	// end := time.Since(start)
+	// fmt.Println("Singlehash ", end)
 }
 
 func MultiHash(in, out chan interface{}) {
-	start := time.Now()
-	end1 := time.Since(start)
-	fmt.Println("multihash begin time ", end1)
+	// start := time.Now()
+	// end1 := time.Since(start)
+	// fmt.Println("multihash begin time ", end1)
 	for dataRaw := range in {
 		var hash sync.Map
 		var result string = ""
@@ -113,22 +113,29 @@ func MultiHash(in, out chan interface{}) {
 		out <- result
 		// fmt.Println("MultiHash ", result)
 	}
-	end := time.Since(start)
-	fmt.Println("MultiHash ", end)
+	// end := time.Since(start)
+	// fmt.Println("MultiHash ", end)
 }
 
 func CombineResults(in, out chan interface{}) {
-	start := time.Now()
+	// start := time.Now()
 	var result string = ""
 	var hash []string
+	wg := new(sync.WaitGroup)
+
 	for dataRaw := range in {
-		data, ok := dataRaw.(string)
-		if !ok {
-			panic("cant convert input data to string")
-		}
-		hash = append(hash, data)
+		wg.Add(1)
+		go func(dataRaw interface{}, hash *[]string, wg *sync.WaitGroup) {
+			defer wg.Done()
+			data, ok := dataRaw.(string)
+			if !ok {
+				panic("cant convert input data to string")
+			}
+			*hash = append(*hash, data)
+		}(dataRaw, &hash, wg)
 	}
-	// fmt.Println(hash)
+	wg.Wait()
+
 	sort.Strings(hash)
 	for i := range hash {
 		result += hash[i]
@@ -138,6 +145,6 @@ func CombineResults(in, out chan interface{}) {
 	}
 	out <- result
 	// fmt.Println("CombineResults ", result)
-	end := time.Since(start)
-	fmt.Println("CombineResults ", end)
+	// end := time.Since(start)
+	// fmt.Println("CombineResults ", end)
 }

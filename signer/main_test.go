@@ -105,10 +105,8 @@ func TestSigner(t *testing.T) {
 	hashSignJobs := []job{
 		job(func(in, out chan interface{}) {
 			for _, fibNum := range inputData {
-				fmt.Println("fibNum:", fibNum)
 				out <- fibNum
 			}
-			fmt.Println("end 1")
 		}),
 		job(SingleHash),
 		job(MultiHash),
@@ -120,14 +118,12 @@ func TestSigner(t *testing.T) {
 				t.Error("cant convert result data to string")
 			}
 			testResult = data
-			fmt.Println("end 2")
 		}),
 	}
 
 	start := time.Now()
 
 	ExecutePipeline(hashSignJobs...)
-	fmt.Println("end execute pipeline")
 
 	end := time.Since(start)
 
