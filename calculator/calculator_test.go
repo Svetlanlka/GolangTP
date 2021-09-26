@@ -1,12 +1,12 @@
-package uniqfunc_test
+package calculator_test
 
 import (
-	"GolangTP/calculator"
 	"math"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/svetlanlka/golangtp/calculator"
 )
 
 func TestCalculator(t *testing.T) {

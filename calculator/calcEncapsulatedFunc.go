@@ -4,22 +4,26 @@ import (
 	"errors"
 	"strconv"
 	"unicode"
-	"unicode/utf8"
 )
 
-func IsSign(sym string) bool {
+const PLUS = "+"
+
+func isSign(sym string) bool {
 	if sym == "/" || sym == "*" || sym == "+" || sym == "-" {
 		return true
 	}
 	return false
 }
 
-func calculateExpr(value1, value2, sign string) (string, error) {
+func calculateExpr(first, second, sign string) (string, error) {
 	var result float64
-	a, err1 := strconv.ParseFloat(value1, 64)
-	b, err2 := strconv.ParseFloat(value2, 64)
-	if err1 != nil || err2 != nil {
-		return "", errors.New("not parse float")
+	a, err1 := strconv.ParseFloat(first, 64)
+	if err1 != nil {
+		return "", errors.New("cannot convert first operand to float")
+	}
+	b, err2 := strconv.ParseFloat(second, 64)
+	if err2 != nil {
+		return "", errors.New("cannot convert second operand to float")
 	}
 
 	switch sign {
@@ -37,13 +41,6 @@ func calculateExpr(value1, value2, sign string) (string, error) {
 	return strconv.FormatFloat(result, 'f', -1, 64), nil
 }
 
-func priorityInit(priority map[string]int) {
-	priority["+"] = 1
-	priority["-"] = 1
-	priority["*"] = 2
-	priority["/"] = 2
-}
-
 func calcStackChange(numbers, signs []string) ([]string, []string, bool, error) {
 	lastSignIdx := len(signs) - 1
 	lastNumberIdx := len(numbers) - 1
@@ -58,8 +55,7 @@ func calcStackChange(numbers, signs []string) ([]string, []string, bool, error) 
 	return numbers, signs, true, err
 }
 
-// return true, if we can put into stack new sign
-func canToPutSign(cur string, signs []string, prior map[string]int) bool {
+func checkSign(cur string, signs []string, prior map[string]int) bool {
 	if cur == ")" {
 		return false
 	}
@@ -81,51 +77,52 @@ func deleteBrackets(current string, signs []string) ([]string, bool) {
 	return signs, false
 }
 
-func getNextElem(line string, i *int, last string) (string, bool, error) {
-	var result string = ""
-	var len int = utf8.RuneCountInString(line)
+func checkAndGetNextElem(line []string, i *int, last string) (string, bool, error) {
+	result := ""
+	len := len(line)
 
 	for ; *i < len; (*i)++ {
-		var sym = rune(line[*i])
+		sym := line[*i]
+		symRune := []rune(sym)[0]
 
-		if unicode.IsSpace(sym) {
+		if unicode.IsSpace(symRune) {
 			continue
 		}
-		if string(sym) == "." {
-			if result == "" || *i+1 >= len || !unicode.IsDigit(rune(line[(*i)+1])) {
+		if sym == "." {
+			if result == "" || *i+1 >= len || !unicode.IsDigit([]rune(line[(*i)+1])[0]) {
 				return "", false, errors.New("point must be after or before digit")
 			}
-			result += string(sym)
+			result += sym
 			continue
 		}
-		if IsSign(string(sym)) {
-			if (last == "" || IsSign(last) || last == "(") && (string(sym) == "-" || string(sym) == "+") && result == "" {
-				result += string(sym)
+		if isSign(sym) {
+			if (last == "" || isSign(last) || last == "(") && (sym == "-" || sym == "+") && result == "" {
+				result += sym
 				continue
 			}
 			(*i)++
-			return string(sym), false, nil
+			return sym, false, nil
 		}
-		if string(sym) == "(" {
-			if last == "" || IsSign(last) || last == "(" {
+		if sym == "(" {
+			if last == "" || isSign(last) || last == "(" {
 				(*i)++
-				return string(sym), false, nil
+				return sym, false, nil
 			}
 			return "", false, errors.New("before '(' not correct symbol")
 		}
-		if string(sym) == ")" {
-			if !(last == "" || IsSign(last)) {
+		if sym == ")" {
+			if !(last == "" || isSign(last)) {
 				(*i)++
-				return string(sym), false, nil
+				return sym, false, nil
 			}
 			return "", false, errors.New("before ')' not correct symbol")
 		}
-		if unicode.IsDigit(sym) {
-			if !(last == "" || IsSign(last) || last == "(") {
+		if unicode.IsDigit(symRune) {
+			if !(last == "" || isSign(last) || last == "(") {
 				return "", false, errors.New("before digit not correct symbol")
 			}
-			result += string(sym)
-			if *i+1 < len && (!unicode.IsDigit(rune(line[(*i)+1])) && string(line[(*i)+1]) != ".") {
+			result += sym
+			if *i+1 < len && (!unicode.IsDigit([]rune(line[(*i)+1])[0]) && line[(*i)+1] != ".") {
 				(*i)++
 				break
 			}

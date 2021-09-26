@@ -3,24 +3,28 @@ package calculator
 import (
 	"errors"
 	"fmt"
-	"unicode/utf8"
+	"strings"
 )
 
-func Calculator(line string) (string, error) {
-	prior := make(map[string]int)
-	priorityInit(prior)
+func Calculator(inputLine string) (string, error) {
+	prior := map[string]int{
+		"+": 1,
+		"-": 1,
+		"*": 2,
+		"/": 2,
+	}
 
 	var (
-		numbers, signs  []string
-		current         string = ""
-		isNumber        bool
-		isCalculated    bool  = false
-		isBracketClosed bool  = true
-		err             error = nil
+		numbers, signs []string
+		current        string
+		isNumber       bool
+		err            error
 	)
 
-	for i := 0; i < utf8.RuneCountInString(line); {
-		current, isNumber, err = getNextElem(line, &i, current)
+	line := strings.Split(inputLine, "")
+	fmt.Println(line, len(line))
+	for i := 0; i < len(line); {
+		current, isNumber, err = checkAndGetNextElem(line, &i, current)
 		fmt.Println("get line ", i, ":", current)
 		if err != nil {
 			return "", err
@@ -34,7 +38,7 @@ func Calculator(line string) (string, error) {
 				signs = append(signs, current)
 				continue
 			}
-			numbers, signs, err = putSignAndTryDoOperation(current, signs, numbers, prior, &isBracketClosed, &isCalculated)
+			numbers, signs, err = putSignAndTryDoOperation(current, signs, numbers, prior)
 			if err != nil {
 				return "", err
 			}
@@ -42,7 +46,7 @@ func Calculator(line string) (string, error) {
 			numbers = append(numbers, current)
 		}
 	}
-	isCalculated = true
+	isCalculated := true
 	for isCalculated {
 		numbers, signs, isCalculated, err = calcStackChange(numbers, signs)
 	}
@@ -57,31 +61,34 @@ func Calculator(line string) (string, error) {
 }
 
 func putSignAndTryDoOperation(current string, signs, numbers []string,
-	prior map[string]int, isBracketClosed, isCalculated *bool) ([]string, []string, error) {
+	prior map[string]int) ([]string, []string, error) {
 	var err error
+	isCalculated := false
+	isBracketClosed := true
+
 	if current == ")" {
-		*isBracketClosed = false
+		isBracketClosed = false
 	}
 
-	for !canToPutSign(current, signs, prior) {
-		*isCalculated = true
-		signs, *isCalculated = deleteBrackets(current, signs)
-		if *isCalculated {
-			*isBracketClosed = true
+	for !checkSign(current, signs, prior) {
+		isCalculated = true
+		signs, isCalculated = deleteBrackets(current, signs)
+		if isCalculated {
+			isBracketClosed = true
 			break
 		}
-		numbers, signs, *isCalculated, err = calcStackChange(numbers, signs)
+		numbers, signs, isCalculated, err = calcStackChange(numbers, signs)
 		if err != nil {
 			return numbers, signs, err
 		}
-		if !(*isCalculated) {
+		if !(isCalculated) {
 			break
 		}
 	}
-	if !(*isBracketClosed) {
+	if !(isBracketClosed) {
 		return numbers, signs, errors.New("no open brackets")
 	}
-	if IsSign(current) {
+	if isSign(current) {
 		signs = append(signs, current)
 	}
 	return numbers, signs, nil
