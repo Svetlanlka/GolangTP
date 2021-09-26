@@ -1,6 +1,6 @@
 package testcases
 
-import "GolangTP/options"
+import "github.com/svetlanlka/golangtp/uniq/options"
 
 type TestStruct struct {
 	in      string

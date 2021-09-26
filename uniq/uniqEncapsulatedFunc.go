@@ -3,18 +3,12 @@ package uniq
 import (
 	"strconv"
 	"strings"
-	"uniq/functors"
-	. "uniq/options"
+
+	"github.com/svetlanlka/golangtp/readwrite/functors"
+	"github.com/svetlanlka/golangtp/uniq/options"
 )
 
-func IsTrue(value bool) int8 {
-	if value {
-		return 1
-	}
-	return 0
-}
-
-func deleteFieldsInStr(str string, op Options) string {
+func deleteFieldsInLines(str string, op options.Options) string {
 	arr := strings.Split(str, " ")
 
 	if op.NumFieldsIgnore < len(arr) {
@@ -23,32 +17,32 @@ func deleteFieldsInStr(str string, op Options) string {
 	return ""
 }
 
-func deleteSymInStr(str string, op Options) string {
+func deleteCharInLines(str string, op options.Options) string {
 	arr := strings.Split(str, " ")
 
 	for i, value := range arr {
 		splitValue := strings.Split(value, "")
 		if op.NumCharsIgnore < len(splitValue) {
 			arr[i] = strings.Join(splitValue[op.NumCharsIgnore:], "")
-		} else {
-			arr[i] = ""
+			continue
 		}
+		arr[i] = ""
 	}
 
 	return strings.Join(arr, "")
 }
 
-func StrIsEqual(str1, str2 string, op Options) bool {
+func linesIsEqual(str1, str2 string, op options.Options) bool {
 	str1 = strings.Trim(str1, " ")
 	str2 = strings.Trim(str2, " ")
 
 	if op.NumFieldsIgnore > 0 {
-		str1 = deleteFieldsInStr(str1, op)
-		str2 = deleteFieldsInStr(str2, op)
+		str1 = deleteFieldsInLines(str1, op)
+		str2 = deleteFieldsInLines(str2, op)
 	}
 	if op.NumCharsIgnore > 0 {
-		str1 = deleteSymInStr(str1, op)
-		str2 = deleteSymInStr(str2, op)
+		str1 = deleteCharInLines(str1, op)
+		str2 = deleteCharInLines(str2, op)
 	}
 
 	if !op.IgnoreSymCase && str1 != str2 || (op.IgnoreSymCase && !strings.EqualFold(str1, str2)) {
@@ -57,7 +51,7 @@ func StrIsEqual(str1, str2 string, op Options) bool {
 	return true
 }
 
-func WriteStr(currentNumber int, currentStr string, writer *functors.WriterMock, op Options, eof bool) {
+func writeStr(currentNumber int, currentStr string, writer *functors.WriterMock, op options.Options, eof bool) {
 	if op.WithNumber && currentNumber != 0 ||
 		op.RepeatedLines && currentNumber > 1 ||
 		op.NoRepeatedLines && currentNumber == 1 ||

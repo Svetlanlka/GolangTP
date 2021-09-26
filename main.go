@@ -1,48 +1,30 @@
 package main
 
 import (
+	"github.com/svetlanlka/golangtp/readwrite"
+	"github.com/svetlanlka/golangtp/readwrite/functors"
 	. "github.com/svetlanlka/golangtp/uniq"
-	// . "GolangTP/uniqfunc"
-	"bufio"
+	"github.com/svetlanlka/golangtp/uniq/options"
+
 	"flag"
-	"fmt"
-	"os"
 )
 
 const filepath string = "testfiles/"
 
 func main() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "uniq [-c | -d | -u] [-i] [-f num] [-s chars] [input_file [output_file]]\n")
-		flag.PrintDefaults()
-	}
 	flag.Parse()
-	if IsTrue(Op.WithNumber)+IsTrue(Op.RepeatedLines)+IsTrue(Op.NoRepeatedLines) > 1 {
-		flag.Usage()
+	if !options.CheckFlags(options.Op) {
+		return
+	}
+	reader := functors.NewReaderMock()
+	if !readwrite.Read(filepath, flag.Arg(0), reader) {
 		return
 	}
 
-	input, fileIn := GetReader(filepath, flag.Arg(0))
-	output, fileOut := GetWriter(filepath, flag.Arg(1))
-	defer fileIn.Close()
-	defer fileOut.Close()
+	var values []string = Uniq(reader.GetValues(), options.Op)
 
-	scanner := bufio.NewScanner(input)
-	writer := bufio.NewWriter(output)
-	reader := functors.NewReaderMock()
-
-	for scanner.Scan() {
-		functors.OutputRead(reader, scanner.Text())
+	writer := functors.NewWriterMock()
+	if !readwrite.Write(filepath, flag.Arg(1), writer, values) {
+		return
 	}
-	if err := scanner.Err(); err != nil {
-		fmt.Printf("Invalid input: %s\n", err)
-		panic(err)
-	}
-
-	var values []string = Uniq(reader.GetValues(), Op)
-
-	for _, value := range values {
-		writer.WriteString(value)
-	}
-	writer.Flush()
 }

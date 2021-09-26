@@ -1,11 +1,12 @@
 package uniqfunc_test
 
 import (
-	"GolangTP/options"
-	"GolangTP/uniqfunc"
-	"GolangTP/uniqfunc/tests/testcases"
 	"strings"
 	"testing"
+
+	"github.com/svetlanlka/golangtp/uniq"
+	"github.com/svetlanlka/golangtp/uniq/options"
+	"github.com/svetlanlka/golangtp/uniq/tests/testcases"
 
 	"github.com/stretchr/testify/require"
 )
@@ -77,7 +78,7 @@ func TestUniq(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			require.Equal(t, strings.SplitAfter(test.out, "\n"),
-				uniqfunc.Uniq(strings.Split(test.in, "\n"), test.options))
+				uniq.Uniq(strings.Split(test.in, "\n"), test.options))
 		})
 	}
 }
