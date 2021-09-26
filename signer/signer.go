@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+const hashCount = 6
+
 func ExecutePipeline(workers ...job) {
 	in := make(chan interface{})
 	wg := new(sync.WaitGroup)
@@ -18,7 +20,7 @@ func ExecutePipeline(workers ...job) {
 		go func(wg *sync.WaitGroup, work job, in chan interface{}, out chan interface{}) {
 			defer wg.Done()
 			work(in, out)
-			close(out)
+			defer close(out)
 		}(wg, work, in, out)
 
 		in = out
@@ -37,21 +39,21 @@ func SingleHash(in, out chan interface{}) {
 		go func(dataRaw interface{}, wgComplex *sync.WaitGroup) {
 			defer wgComplex.Done()
 			data := fmt.Sprint(dataRaw)
-			data1 := make(chan string)
-			data2 := make(chan string)
+			dataCrc32 := make(chan string)
+			dataCrc32Md5 := make(chan string)
 
 			mu.Lock()
 			dataMd5 := DataSignerMd5(data)
 			mu.Unlock()
 
 			go func(data string) {
-				data1 <- DataSignerCrc32(data)
+				dataCrc32 <- DataSignerCrc32(data)
 			}(data)
 			go func(dataMd5 string) {
-				data2 <- DataSignerCrc32(dataMd5)
+				dataCrc32Md5 <- DataSignerCrc32(dataMd5)
 			}(dataMd5)
 
-			hash := <-data1 + "~" + <-data2
+			hash := <-dataCrc32 + "~" + <-dataCrc32Md5
 			out <- hash
 		}(dataRaw, wgComplex)
 	}
@@ -75,7 +77,7 @@ func MultiHash(in, out chan interface{}) {
 			}
 
 			wg := new(sync.WaitGroup)
-			for th := 0; th < 6; th++ {
+			for th := 0; th < hashCount; th++ {
 				wg.Add(1)
 
 				go func(th int, data string, hash *sync.Map, wg *sync.WaitGroup) {
@@ -85,7 +87,7 @@ func MultiHash(in, out chan interface{}) {
 			}
 			wg.Wait()
 
-			for th := 0; th < 6; th++ {
+			for th := 0; th < hashCount; th++ {
 				h, ok := hash.Load(th)
 				if !ok {
 					fmt.Println("cant convert input data to string")
