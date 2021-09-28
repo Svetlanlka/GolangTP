@@ -6,17 +6,24 @@ import (
 	"unicode"
 )
 
-const PLUS = "+"
+const (
+	plus           = "+"
+	minus          = "-"
+	multiplication = "*"
+	division       = "/"
+	leftBracket    = "("
+	rightBracket   = ")"
+)
 
 func isSign(sym string) bool {
-	if sym == "/" || sym == "*" || sym == "+" || sym == "-" {
+	if sym == plus || sym == minus || sym == multiplication || sym == division {
 		return true
 	}
 	return false
 }
 
 func calculateExpr(first, second, sign string) (string, error) {
-	var result float64
+	result := 0.0
 	a, err1 := strconv.ParseFloat(first, 64)
 	if err1 != nil {
 		return "", errors.New("cannot convert first operand to float")
@@ -27,13 +34,13 @@ func calculateExpr(first, second, sign string) (string, error) {
 	}
 
 	switch sign {
-	case "+":
+	case plus:
 		result = a + b
-	case "-":
+	case minus:
 		result = a - b
-	case "*":
+	case multiplication:
 		result = a * b
-	case "/":
+	case division:
 		result = a / b
 	default:
 		return "", errors.New("wrong operation")
@@ -56,13 +63,13 @@ func calcStackChange(numbers, signs []string) ([]string, []string, bool, error) 
 }
 
 func checkSign(cur string, signs []string, prior map[string]int) bool {
-	if cur == ")" {
+	if cur == rightBracket {
 		return false
 	}
 	if len(signs) < 1 {
 		return true
 	}
-	if signs[len(signs)-1] == "(" {
+	if signs[len(signs)-1] == leftBracket {
 		return true
 	}
 
@@ -70,7 +77,7 @@ func checkSign(cur string, signs []string, prior map[string]int) bool {
 }
 
 func deleteBrackets(current string, signs []string) ([]string, bool) {
-	if current == ")" && (len(signs) > 0 && signs[len(signs)-1] == "(") {
+	if current == rightBracket && (len(signs) > 0 && signs[len(signs)-1] == leftBracket) {
 		signs = signs[:(len(signs) - 1)]
 		return signs, true
 	}
@@ -96,21 +103,21 @@ func checkAndGetNextElem(line []string, i *int, last string) (string, bool, erro
 			continue
 		}
 		if isSign(sym) {
-			if (last == "" || isSign(last) || last == "(") && (sym == "-" || sym == "+") && result == "" {
+			if (last == "" || isSign(last) || last == leftBracket) && (sym == minus || sym == plus) && result == "" {
 				result += sym
 				continue
 			}
 			(*i)++
 			return sym, false, nil
 		}
-		if sym == "(" {
-			if last == "" || isSign(last) || last == "(" {
+		if sym == leftBracket {
+			if last == "" || isSign(last) || last == leftBracket {
 				(*i)++
 				return sym, false, nil
 			}
 			return "", false, errors.New("before '(' not correct symbol")
 		}
-		if sym == ")" {
+		if sym == rightBracket {
 			if !(last == "" || isSign(last)) {
 				(*i)++
 				return sym, false, nil
@@ -118,7 +125,7 @@ func checkAndGetNextElem(line []string, i *int, last string) (string, bool, erro
 			return "", false, errors.New("before ')' not correct symbol")
 		}
 		if unicode.IsDigit(symRune) {
-			if !(last == "" || isSign(last) || last == "(") {
+			if !(last == "" || isSign(last) || last == leftBracket) {
 				return "", false, errors.New("before digit not correct symbol")
 			}
 			result += sym

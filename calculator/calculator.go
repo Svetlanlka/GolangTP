@@ -8,10 +8,10 @@ import (
 
 func Calculator(inputLine string) (string, error) {
 	prior := map[string]int{
-		"+": 1,
-		"-": 1,
-		"*": 2,
-		"/": 2,
+		plus:           1,
+		minus:          1,
+		multiplication: 2,
+		division:       2,
 	}
 
 	var (
@@ -34,7 +34,7 @@ func Calculator(inputLine string) (string, error) {
 		}
 
 		if isNumber == false || current == "" {
-			if current == "(" {
+			if current == leftBracket {
 				signs = append(signs, current)
 				continue
 			}
@@ -66,7 +66,7 @@ func putSignAndTryDoOperation(current string, signs, numbers []string,
 	isCalculated := false
 	isBracketClosed := true
 
-	if current == ")" {
+	if current == rightBracket {
 		isBracketClosed = false
 	}
 
