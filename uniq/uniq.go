@@ -5,25 +5,32 @@ import (
 	"github.com/svetlanlka/golangtp/uniq/options"
 )
 
-func Uniq(values []string, op options.Options) []string {
-	currentStr := ""
-	currentNumber := 0
+func Uniq(data []string, op options.Options) []string {
+	previousStr := ""
+	repeatedStrNumber := 0
 
 	writer := functors.NewWriterMock()
 
-	for _, value := range values {
-		if !linesIsEqual(value, currentStr, op) {
-			if currentNumber > 0 {
-				writeStr(currentNumber, currentStr, writer, op, false)
+	for _, currentStr := range data {
+		if !linesIsEqual(currentStr, previousStr, op) {
+			if repeatedStrNumber > 0 {
+				if lineSatisfiesConditionWithFlags(repeatedStrNumber, previousStr, op) {
+					lineToWrite := addNumberOfRepeatedLines(repeatedStrNumber, previousStr, op)
+					lineToWrite += "\n"
+					writeLine(repeatedStrNumber, lineToWrite, writer, op)
+				}
 			}
 
-			currentNumber = 0
-			currentStr = value
+			repeatedStrNumber = 0
+			previousStr = currentStr
 		}
 
-		currentNumber++
+		repeatedStrNumber++
 	}
-	writeStr(currentNumber, currentStr, writer, op, true)
+	if lineSatisfiesConditionWithFlags(repeatedStrNumber, previousStr, op) {
+		lineToWrite := addNumberOfRepeatedLines(repeatedStrNumber, previousStr, op)
+		writeLine(repeatedStrNumber, lineToWrite, writer, op)
+	}
 
 	return writer.GetValues()
 }

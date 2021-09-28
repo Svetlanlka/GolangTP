@@ -51,24 +51,31 @@ func linesIsEqual(str1, str2 string, op options.Options) bool {
 	return true
 }
 
-func writeStr(currentNumber int, currentStr string, writer *functors.WriterMock, op options.Options, eof bool) {
-	if op.WithNumber && currentNumber != 0 ||
-		op.RepeatedLines && currentNumber > 1 ||
-		op.NoRepeatedLines && currentNumber == 1 ||
-		!(op.WithNumber || op.RepeatedLines || op.NoRepeatedLines) {
-		if op.WithNumber {
-			number := strconv.Itoa(currentNumber)
-			if strings.Trim(currentStr, " ") == "" {
-				currentStr = number
-			} else {
-				currentStr = number + " " + currentStr
-			}
-		}
-		if !eof {
-			currentStr += "\n"
-		}
-		if strings.Trim(currentStr, " ") != "" {
-			functors.OutputWrite(writer, currentStr)
-		}
+func writeLine(repeatedStrNumber int, line string, writer *functors.WriterMock, op options.Options) {
+	if strings.Trim(line, " ") != "" {
+		functors.OutputWrite(writer, line)
 	}
+}
+
+func lineSatisfiesConditionWithFlags(repeatedStrNumber int, previousStr string, op options.Options) bool {
+	if op.WithNumber && repeatedStrNumber != 0 ||
+		op.RepeatedLines && repeatedStrNumber > 1 ||
+		op.NoRepeatedLines && repeatedStrNumber == 1 ||
+		!(op.WithNumber || op.RepeatedLines || op.NoRepeatedLines) {
+		return true
+	}
+	return false
+}
+
+func addNumberOfRepeatedLines(repeatedStrNumber int, previousStr string, op options.Options) string {
+	if op.WithNumber {
+		number := strconv.Itoa(repeatedStrNumber)
+		if strings.Trim(previousStr, " ") == "" {
+			return number
+		}
+
+		return number + " " + previousStr
+	}
+
+	return previousStr
 }
