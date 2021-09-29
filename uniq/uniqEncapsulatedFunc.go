@@ -68,14 +68,14 @@ func lineSatisfiesConditionWithFlags(repeatedStrNumber int, previousStr string, 
 }
 
 func addNumberOfRepeatedLines(repeatedStrNumber int, previousStr string, op options.Options) string {
-	if op.WithNumber {
-		number := strconv.Itoa(repeatedStrNumber)
-		if strings.Trim(previousStr, " ") == "" {
-			return number
-		}
-
-		return number + " " + previousStr
+	if !op.WithNumber {
+		return previousStr
 	}
 
-	return previousStr
+	number := strconv.Itoa(repeatedStrNumber)
+	if strings.Trim(previousStr, " ") == "" {
+		return number
+	}
+
+	return number + " " + previousStr
 }
